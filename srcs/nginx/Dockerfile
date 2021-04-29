@@ -1,22 +1,26 @@
-FROM alpine:3.8
-RUN apk update
-RUN apk upgrade
-RUN apk add --no-cache nginx openssl openssh
-RUN openssl req -newkey rsa:4096 -nodes -x509 -keyout /etc/ssl/private/nginx.key -out /etc/ssl/certs/nginx.crt -days 365 -subj "/C=KR/L=Seoul/O=42Seoul/OU=hekang/CN=nginx"
-RUN	chmod 600 etc/ssl/certs/nginx.crt /etc/ssl/private/nginx.key
-RUN	adduser -D -g 'www' www \
-&&	mkdir /www \
-&&	chown -R www:www /var/lib/nginx \
-&&	chown -R www:www /www \
-&&	mkdir -p /run/nginx \
+FROM alpine:latest
 
-COPY ./index.html /www/index.html
-COPY ./nginx.conf /etc/nginx/nginx.conf
-COPY ./default.conf /etc/nginx/conf.d/default.conf
-COPY ./entrypoint.sh .
+COPY nginx.conf index.html setup.sh ./
 
-RUN	chmod +x entrypoint.sh
+# install nginx and dependencies
+RUN apk update && \
+	apk add --no-cache nginx openssh openssl
+
+# Setup nginx
+RUN mkdir -p /run/nginx www && \
+		mv nginx.conf /etc/nginx/ && \
+		mv index.html /www/
+
+# Setup SSL
+RUN openssl req -new -newkey rsa:2048 -nodes -days 365 -x509 \
+		-subj "/C=KR/L=Seoul/O=42Seoul/OU=hekang/CN=nginx" \
+		-keyout /etc/ssl/private/services.key -out /etc/ssl/certs/services.crt
+
+# Setup SSH
+RUN ssh-keygen -A && \
+	adduser -D ssh_admin && \
+	echo "ssh_admin:hekang" | chpasswd
 
 EXPOSE 22 80 443
 
-CMD ["./entrypoint.sh"]
+CMD ./setup.sh

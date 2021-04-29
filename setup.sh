@@ -6,4 +6,4 @@ sed "s/MINIKUBE_IP/$MINIKUBE_IP/g" ./srcs/metallb/config_format.yaml > ./srcs/me
 
 echo "metalLB start"
 minikube addons enable metallb
-kubectl apply -f metallb-config.yaml
+kubectl apply -f ./srcs/metallb/config.yaml
